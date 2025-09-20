@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@xyflow/react/dist/style.css";
+@import "../themes/reactflow.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -254,4 +256,5 @@
   .highlight-glow:hover::before {
     opacity: 1;
   }
+
 }

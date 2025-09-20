@@ -32,24 +32,45 @@ import {
   Upload,
 } from 'lucide-react';
 
-import '@xyflow/react/dist/style.css';
+import { BaseNode, CommentNode } from '@/components/nodes';
 
-const initialNodes = [
+// Define custom node types
+const nodeTypes = {
+  default: BaseNode,
+  input: BaseNode,
+  output: BaseNode,
+  comment: CommentNode,
+};
+
+type NodeData = {
+  label: string;
+  nodeType: 'default' | 'input' | 'output' | 'comment';
+};
+
+type CustomNodeType = {
+  id: string;
+  type: 'default' | 'input' | 'output' | 'comment';
+  position: { x: number; y: number };
+  data: NodeData;
+};
+
+const initialNodes: CustomNodeType[] = [
   {
     id: '1',
-    type: 'input',
-    data: { label: '输入节点' },
+    type: 'default',
+    data: { label: '输入节点', nodeType: 'input' },
     position: { x: 250, y: 25 },
   },
   {
     id: '2',
-    data: { label: '默认节点' },
+    type: 'default',
+    data: { label: '默认节点', nodeType: 'default' },
     position: { x: 100, y: 125 },
   },
   {
     id: '3',
-    type: 'output',
-    data: { label: '输出节点' },
+    type: 'default',
+    data: { label: '输出节点', nodeType: 'output' },
     position: { x: 250, y: 250 },
   },
 ];
@@ -73,24 +94,24 @@ function FlowCanvas() {
 
 
   // 添加节点
-  const addNode = (type: string = 'default') => {
+  const addNode = () => {
     const id = `node_${Date.now()}`;
     const position = screenToFlowPosition({
       x: clickPosition.x,
       y: clickPosition.y,
     });
     
-    const newNode = {
+    const newNode: CustomNodeType = {
       id,
-      type,
+      type: 'default',
       position,
       data: { 
-        label: type === 'input' ? '输入节点' : 
-               type === 'output' ? '输出节点' : '处理节点'
+        label: '新节点',
+        nodeType: 'default'
       },
     };
     
-    setNodes((nds) => nds.concat(newNode));
+    setNodes((nds) => [...nds, newNode]);
   };
 
   // 添加注释
@@ -101,20 +122,17 @@ function FlowCanvas() {
       y: clickPosition.y,
     });
     
-    const commentNode = {
+    const commentNode: CustomNodeType = {
       id,
-      type: 'default',
+      type: 'comment',
       position,
-      data: { label: '注释' },
-      style: {
-        background: '#fff3cd',
-        border: '1px dashed #ffc107',
-        borderRadius: '8px',
-        color: '#856404',
+      data: { 
+        label: '注释',
+        nodeType: 'comment'
       },
     };
     
-    setNodes((nds) => nds.concat(commentNode));
+    setNodes((nds) => [...nds, commentNode]);
   };
 
   // 运行工作流
@@ -193,6 +211,7 @@ function FlowCanvas() {
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
+              nodeTypes={nodeTypes}
               style={{ backgroundColor: '#faf9f6' }}
             >
               <Controls position="top-left" style={{ left: '10px', top: '40%', transform: 'translateY(-50%)' }} />
@@ -208,7 +227,7 @@ function FlowCanvas() {
         </ContextMenuTrigger>
         
         <ContextMenuContent className="w-48">
-          <ContextMenuItem onClick={() => addNode('default')} className="cursor-pointer">
+          <ContextMenuItem onClick={addNode} className="cursor-pointer">
             <Plus className="mr-2 h-4 w-4" />
             添加节点
           </ContextMenuItem>
