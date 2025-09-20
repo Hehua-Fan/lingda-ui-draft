@@ -7,6 +7,8 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 export interface BaseNodeProps extends NodeProps {
   data: {
     label: string;
+    description?: string;
+    icon?: React.ReactNode;
     nodeType?: 'default' | 'start' | 'end';
   };
 }
@@ -77,8 +79,25 @@ export default function BaseNode({ data }: BaseNodeProps) {
       )}
       
       {/* Node content */}
-      <div className={`text-sm text-center ${styles.text}`}>
-        {data.label}
+      <div className="w-full px-3 py-2 space-y-2">
+        {/* Header */}
+        <div className={`flex items-center gap-2 ${styles.text}`}>
+          {data.icon && (
+            <div className="flex-shrink-0">
+              {data.icon}
+            </div>
+          )}
+          <span className="text-sm font-medium truncate">
+            {data.label}
+          </span>
+        </div>
+        
+        {/* Description */}
+        {data.description && (
+          <div className="text-xs text-gray-600 text-left">
+            {data.description}
+          </div>
+        )}
       </div>
       
       {/* Right connection point - for output connections (except for end nodes) */}
@@ -90,6 +109,7 @@ export default function BaseNode({ data }: BaseNodeProps) {
               position={Position.Right}
               id="source-1"
               className="hover:scale-110 hover:z-10 transition-all origin-center"
+              style={ { top: '25%' } }
             />
           </TooltipTrigger>
           <TooltipContent>

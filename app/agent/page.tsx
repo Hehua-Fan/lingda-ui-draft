@@ -30,6 +30,10 @@ import {
   Clipboard,
   Download,
   Upload,
+  BarChart3,
+  Bot,
+  PlayCircle,
+  X,
 } from 'lucide-react';
 
 import { BaseNode, CommentNode } from '@/components/nodes';
@@ -44,7 +48,9 @@ const nodeTypes = {
 
 type NodeData = {
   label: string;
-  nodeType: 'default' | 'input' | 'output' | 'comment';
+  description?: string;
+  icon?: React.ReactNode;
+  nodeType: 'default' | 'start' | 'end' | 'comment';
 };
 
 type CustomNodeType = {
@@ -58,20 +64,35 @@ const initialNodes: CustomNodeType[] = [
   {
     id: '1',
     type: 'default',
-    data: { label: '输入节点', nodeType: 'input' },
-    position: { x: 250, y: 25 },
+    data: { 
+      label: '开始',
+      description: '工作流程开始',
+      icon: <PlayCircle className="w-4 h-4" />,
+      nodeType: 'start' 
+    },
+    position: { x: 250, y: 125 },
   },
   {
     id: '2',
     type: 'default',
-    data: { label: '默认节点', nodeType: 'default' },
-    position: { x: 100, y: 125 },
+    data: { 
+      label: 'LLM',
+      description: '大语言模型处理',
+      icon: <Bot className="w-4 h-4" />,
+      nodeType: 'default' 
+    },
+    position: { x: 550, y: 125 },
   },
   {
     id: '3',
     type: 'default',
-    data: { label: '输出节点', nodeType: 'output' },
-    position: { x: 250, y: 250 },
+    data: { 
+      label: 'Output',
+      description: 'Display it as a webpage',
+      icon: <BarChart3 className="w-4 h-4" />,
+      nodeType: 'end' 
+    },
+    position: { x: 850, y: 125 },
   },
 ];
 
@@ -84,12 +105,20 @@ function FlowCanvas() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [clickPosition, setClickPosition] = useState({ x: 0, y: 0 });
+  const [selectedNode, setSelectedNode] = useState<CustomNodeType | null>(null);
+  const [isNodeSheetOpen, setIsNodeSheetOpen] = useState(false);
   const { screenToFlowPosition } = useReactFlow();
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges],
   );
+
+  // 节点点击事件处理
+  const onNodeClick = useCallback((event: React.MouseEvent, node: CustomNodeType) => {
+    setSelectedNode(node);
+    setIsNodeSheetOpen(true);
+  }, []);
 
 
 
@@ -211,6 +240,7 @@ function FlowCanvas() {
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
+              onNodeClick={onNodeClick}
               nodeTypes={nodeTypes}
               style={{ backgroundColor: '#faf9f6' }}
             >
@@ -266,6 +296,110 @@ function FlowCanvas() {
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
+
+      {/* Node Details Sidebar */}
+      {isNodeSheetOpen && (
+        <div className="fixed top-[60px] right-4 h-[calc(100vh-68px)] w-[400px] bg-white rounded-xl shadow-xl z-50 flex flex-col animate-in slide-in-from-right duration-300 border border-gray-200">
+          {/* 关闭按钮 */}
+          <button
+            onClick={() => setIsNodeSheetOpen(false)}
+            className="absolute top-4 right-4 rounded-full p-1 hover:bg-gray-100 transition-colors cursor-pointer"
+          >
+            <X className="h-4 w-4 text-gray-500" />
+            <span className="sr-only">关闭</span>
+          </button>
+          
+          {/* 标题区域 */}
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-2">
+              {selectedNode?.data.icon}
+              <h2 className="text-xl font-semibold text-gray-900">{selectedNode?.data.label}</h2>
+            </div>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              配置节点的详细信息和参数设置
+            </p>
+          </div>
+        
+          {/* 内容区域 */}
+          <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-900">名称</label>
+              <input 
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={selectedNode?.data.label || ''}
+                onChange={(e) => {
+                  if (selectedNode) {
+                    const updatedNode = {
+                      ...selectedNode,
+                      data: { ...selectedNode.data, label: e.target.value }
+                    };
+                    setNodes((nds) =>
+                      nds.map((node) => (node.id === selectedNode.id ? updatedNode : node))
+                    );
+                    setSelectedNode(updatedNode);
+                  }
+                }}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-900">描述</label>
+              <textarea 
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm h-24 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={selectedNode?.data.description || ''}
+                placeholder="输入节点描述..."
+                onChange={(e) => {
+                  if (selectedNode) {
+                    const updatedNode = {
+                      ...selectedNode,
+                      data: { ...selectedNode.data, description: e.target.value }
+                    };
+                    setNodes((nds) =>
+                      nds.map((node) => (node.id === selectedNode.id ? updatedNode : node))
+                    );
+                    setSelectedNode(updatedNode);
+                  }
+                }}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-900">节点类型</label>
+              <select 
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={selectedNode?.data.nodeType || 'default'}
+                onChange={(e) => {
+                  if (selectedNode) {
+                    const updatedNode = {
+                      ...selectedNode,
+                      data: { ...selectedNode.data, nodeType: e.target.value as NodeData['nodeType'] }
+                    };
+                    setNodes((nds) =>
+                      nds.map((node) => (node.id === selectedNode.id ? updatedNode : node))
+                    );
+                    setSelectedNode(updatedNode);
+                  }
+                }}
+              >
+                <option value="start">开始节点</option>
+                <option value="default">默认节点</option>
+                <option value="end">结束节点</option>
+                <option value="comment">注释节点</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-900">节点ID</label>
+              <input 
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50"
+                value={selectedNode?.id || ''}
+                disabled
+              />
+              <p className="text-xs text-gray-500">节点的唯一标识符，不可编辑</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
