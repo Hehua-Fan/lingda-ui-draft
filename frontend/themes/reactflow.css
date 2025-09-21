@@ -143,6 +143,44 @@
     border-radius: 0;
     border: none;
   }
+
+  /* Comment nodes styling - 无边框，纯黄色背景 */
+  .react-flow__node[data-node-type="comment"] {
+    z-index: -1 !important;
+    border: none !important;
+    background-color: #fde047 !important; /* yellow-300 */
+  }
+
+  .react-flow__node[data-node-type="comment"]:hover {
+    z-index: 1 !important;
+    border: none !important;
+  }
+
+  .react-flow__node[data-node-type="comment"].selected {
+    z-index: 1000 !important;
+    border: none !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  }
+
+  /* 确保连接线在注释节点之上，但在普通节点之下 */
+  .react-flow__edge {
+    z-index: 0 !important;
+  }
+
+  /* 确保普通节点在连接线之上 */
+  .react-flow__node:not([data-node-type="comment"]) {
+    z-index: 1 !important;
+  }
+
+  /* 选中的普通节点在最上层 */
+  .react-flow__node:not([data-node-type="comment"]).selected {
+    z-index: 100 !important;
+  }
+
+  /* 确保CommentNode的NodeResizer工作正常 */
+  .react-flow__node[data-node-type="comment"] .react-flow__resize-control {
+    z-index: 1001 !important;
+  }
   
   .react-flow__resize-control.handle {
     background-color: #ffffff;

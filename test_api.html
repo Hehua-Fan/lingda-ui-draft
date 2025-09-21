@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .result {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .error {
+            background: #ffe6e6;
+            border-left: 4px solid #ff4444;
+        }
+        .success {
+            background: #e6ffe6;
+            border-left: 4px solid #44ff44;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+    </style>
+</head>
+<body>
+    <h1>Lingda UI Backend API 测试</h1>
+    
+    <div>
+        <button onclick="testHealthCheck()">测试健康检查</button>
+        <button onclick="testNodes()">测试节点信息</button>
+        <button onclick="testWorkflowExecution()">测试工作流执行</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        const resultsDiv = document.getElementById('results');
+
+        function addResult(title, content, isError = false) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${isError ? 'error' : 'success'}`;
+            resultDiv.innerHTML = `<strong>${title}</strong>\n${content}`;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        async function testHealthCheck() {
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                addResult('健康检查 - 成功', JSON.stringify(data, null, 2));
+            } catch (error) {
+                addResult('健康检查 - 失败', error.message, true);
+            }
+        }
+
+        async function testNodes() {
+            try {
+                const response = await fetch(`${API_BASE}/nodes`);
+                const data = await response.json();
+                addResult('节点信息 - 成功', JSON.stringify(data, null, 2));
+            } catch (error) {
+                addResult('节点信息 - 失败', error.message, true);
+            }
+        }
+
+        async function testWorkflowExecution() {
+            const workflowData = {
+                workflow_id: `test_workflow_${Date.now()}`,
+                name: '测试工作流',
+                description: '用于API测试的简单工作流',
+                nodes: [
+                    {
+                        id: 'start_1',
+                        type: 'default',
+                        position: { x: 100, y: 100 },
+                        data: {
+                            label: '开始',
+                            description: '工作流开始',
+                            nodeType: 'start',
+                            params: {}
+                        }
+                    },
+                    {
+                        id: 'visit_1',
+                        type: 'default',
+                        position: { x: 300, y: 100 },
+                        data: {
+                            label: '访问页面',
+                            description: '访问测试页面',
+                            nodeType: 'visit_page',
+                            params: {
+                                url: 'https://httpbin.org/get',
+                                wait_for_load: true,
+                                timeout: 30000
+                            }
+                        }
+                    },
+                    {
+                        id: 'end_1',
+                        type: 'default',
+                        position: { x: 500, y: 100 },
+                        data: {
+                            label: '结束',
+                            description: '工作流结束',
+                            nodeType: 'end',
+                            params: {}
+                        }
+                    }
+                ],
+                edges: [
+                    {
+                        id: 'edge_1',
+                        source: 'start_1',
+                        target: 'visit_1'
+                    },
+                    {
+                        id: 'edge_2',
+                        source: 'visit_1',
+                        target: 'end_1'
+                    }
+                ],
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            try {
+                addResult('发送的数据', JSON.stringify(workflowData, null, 2));
+                
+                const response = await fetch(`${API_BASE}/workflow/execute`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(workflowData),
+                });
+
+                if (!response.ok) {
+                    let errorMessage = `HTTP error! status: ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = `HTTP ${response.status}: ${JSON.stringify(errorData, null, 2)}`;
+                    } catch (e) {
+                        // 如果无法解析错误响应，使用默认消息
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                const result = await response.json();
+                addResult('工作流执行 - 成功', JSON.stringify(result, null, 2));
+                
+                // 查询执行状态
+                if (result.execution_id) {
+                    setTimeout(() => checkExecutionStatus(result.execution_id), 2000);
+                }
+            } catch (error) {
+                addResult('工作流执行 - 失败', error.message, true);
+            }
+        }
+
+        async function checkExecutionStatus(executionId) {
+            try {
+                const response = await fetch(`${API_BASE}/workflow/status/${executionId}`);
+                const data = await response.json();
+                addResult(`执行状态 (${executionId})`, JSON.stringify(data, null, 2));
+            } catch (error) {
+                addResult('执行状态查询 - 失败', error.message, true);
+            }
+        }
+    </script>
+</body>
+</html>

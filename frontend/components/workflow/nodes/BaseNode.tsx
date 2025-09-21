@@ -109,7 +109,7 @@ export default function BaseNode({ data }: BaseNodeProps) {
               position={Position.Right}
               id="source-1"
               className="hover:scale-110 hover:z-10 transition-all origin-center"
-              style={ { top: '25%' } }
+              style={{ top: '25%' }}
             />
           </TooltipTrigger>
           <TooltipContent>
@@ -120,4 +120,3 @@ export default function BaseNode({ data }: BaseNodeProps) {
     </div>
   );
 }
-
